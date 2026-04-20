@@ -30,8 +30,33 @@ npm run build    # production build
 npm run lint     # ESLint
 ```
 
-## Key Constraints
+## Completed Phases
 
-- **Next.js 16.2.4** — significant breaking changes from prior versions. Read `repostwin/@AGENTS.md` before writing any Next.js code. The `@AGENTS.md` at the top of page.tsx triggers this rule file automatically.
-- **No `frontend/` directory** — the plan docs write `frontend/` but the actual code is in `repostwin/`. When the plan says `frontend/`, read it as `repostwin/`.
-- **Backend not created yet** — `backend/` does not exist. API routes in Next.js (`app/api/`) will proxy to FastAPI once it's built.
+- **Phase 0**: Static galaxy demo (hardcoded data, no backend)
+- **Phase 1a**: Aceternity hero components (BackgroundBeams, TypewriterEffect)
+- **Phase 1b**: FastAPI backend (parse, summarize, repo-info endpoints)
+- **Phase 2**: Interactive 3D galaxy (Monaco editor, AI summary, node detail card)
+- **Phase 3**: AI chat sidebar with 3D highlight联动
+- **Phase 4**: Unified LLM config (cloud OpenAI-compatible + local Ollama via env vars)
+
+## Backend Commands
+
+```bash
+cd backend
+uv sync                    # install dependencies
+cp .env.example .env        # configure LLM (optional)
+uv run uvicorn main:app --reload --port 8000
+```
+
+## LLM Configuration (backend/.env.example)
+
+| Variable | Default | Description |
+|---|---|---|
+| `LLM_PROVIDER` | `auto` | `auto` \| `openai` \| `ollama` \| `heuristic` |
+| `OPENAI_API_KEY` | — | API key for OpenAI-compatible providers |
+| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | OpenAI-compatible endpoint |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Model name |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server |
+| `OLLAMA_MODEL` | `llama3.2` | Ollama model |
+
+**Auto mode**: uses cloud if `OPENAI_API_KEY` set, else Ollama if running, else heuristic.
