@@ -10,7 +10,7 @@ from pathlib import Path
 
 from parser import parse_repo
 from summarize import get_file_content, summarize_file
-from llm import stream_chat
+from llm import call_llm
 
 app = FastAPI(title="RepoTwin API", version="0.1.0")
 
@@ -98,12 +98,41 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
-    """Streaming chat with DeepSeek or heuristic fallback."""
+    """Chat via OpenAI-compatible cloud, Ollama local, or heuristic fallback."""
     try:
-        response = stream_chat(req.url, req.message)
+        response = call_llm(req.url, req.message)
         return {"content": response}
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.get("/api/config")
+async def config():
+    """Return LLM config status for frontend display."""
+    import os
+    provider = os.environ.get("LLM_PROVIDER", "auto")
+    has_key = bool(os.environ.get("OPENAI_API_KEY"))
+    has_ollama = False
+    try:
+        import urllib.request
+        req = urllib.request.Request("http://localhost:11434/", headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=2)
+        has_ollama = True
+    except Exception:
+        pass
+
+    if provider == "openai":
+        label = "OpenAI Compatible"
+    elif provider == "ollama":
+        label = "Ollama (Local)"
+    elif has_ollama:
+        label = "Ollama (Local)"
+    elif has_key:
+        label = "Cloud LLM"
+    else:
+        label = "Heuristic"
+
+    return {"provider": label, "has_key": has_key, "has_ollama": has_ollama}
 
 
 if __name__ == "__main__":

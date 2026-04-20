@@ -134,18 +134,22 @@ Replace Phase 0 placeholders with real Aceternity UI components.
 
 ---
 
-## Phase 4: Ollama Local + Vector Store (Future)
+## Phase 4: Cloud + Local LLM Configuration (Complete)
 
-**User stories**: Offline-capable, local LLM inference
+**User stories**: Single codebase supports cloud (OpenAI-compatible) and local (Ollama) via env vars — no code changes needed to switch provider.
 
 ### What to build
 
-- Replace DeepSeek API → Ollama local inference (`llama-cpp` skill)
-- Add ChromaDB vector store for code chunk retrieval (`backend/vectorstore.py`)
-- `RetrievalQA` chain for context-grounded answers
+Unified LLM interface via env vars:
+- `LLM_PROVIDER=openai` → OpenAI-compatible API (DeepSeek, Groq, etc.) via `OPENAI_API_KEY` + `OPENAI_BASE_URL`
+- `LLM_PROVIDER=ollama` → local Ollama at `OLLAMA_BASE_URL`
+- `LLM_PROVIDER=auto` (default) → cloud if key present, else Ollama if running locally, else heuristic fallback
+- `/api/config` endpoint returns current provider label for frontend badge
+- `backend/.env.example` documents all env vars
 
 ### Acceptance criteria
 
-- [ ] Ollama serves `/api/chat` without external API calls
-- [ ] Code chunks stored in ChromaDB, retrieved by similarity
-- [ ] Agent answers reference actual code with file paths
+- [ ] Set `OPENAI_API_KEY` → `/api/chat` calls OpenAI-compatible endpoint
+- [ ] Set `OLLAMA_BASE_URL` + no API key → `/api/chat` calls local Ollama
+- [ ] Neither configured → heuristic response (clones repo, extracts funcs/imports)
+- [ ] `/api/config` returns `{ label, has_key, has_ollama }` for frontend status display
