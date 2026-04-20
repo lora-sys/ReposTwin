@@ -4,6 +4,7 @@ import { useState, Suspense, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import ChatSidebar from "@/components/chat/ChatSidebar";
 import { STATIC_GRAPH_DATA } from "@/lib/staticData";
 import { parseRepo, summarizeFile, type GraphData, type FileSummary } from "@/lib/api";
 
@@ -174,6 +175,7 @@ function GalaxyContent() {
   });
   const [error, setError] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [highlightedNode, setHighlightedNode] = useState<GraphNode | null>(null);
 
   useEffect(() => {
     const repoUrl = searchParams.get("repo");
@@ -186,11 +188,21 @@ function GalaxyContent() {
       });
   }, [searchParams]);
 
+  const data = graphData ?? STATIC_GRAPH_DATA;
+
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(node);
+    setHighlightedNode(node);
   }, []);
 
-  const data = graphData ?? STATIC_GRAPH_DATA;
+  const handleHighlightNode = useCallback((nodeId: string | null) => {
+    if (!nodeId) {
+      setHighlightedNode(null);
+      return;
+    }
+    const found = data.nodes.find((n: GraphNode) => n.id === nodeId);
+    if (found) setHighlightedNode(found);
+  }, [data.nodes]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -222,7 +234,7 @@ function GalaxyContent() {
       )}
 
       <div className="absolute inset-0 pt-16">
-        <ForceGraph3D data={data} onNodeClick={handleNodeClick} highlightedNode={null} />
+        <ForceGraph3D data={data} onNodeClick={handleNodeClick} highlightedNode={highlightedNode?.id ?? null} />
       </div>
 
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 font-mono text-xs text-[var(--muted)] opacity-60">
@@ -232,6 +244,8 @@ function GalaxyContent() {
       {selectedNode && (
         <NodeDetailCard node={selectedNode} repoUrl={repo} onClose={() => setSelectedNode(null)} />
       )}
+
+      {repo && <ChatSidebar repoUrl={repo} onHighlightNode={handleHighlightNode} />}
     </div>
   );
 }

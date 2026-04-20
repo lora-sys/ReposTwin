@@ -10,6 +10,7 @@ from pathlib import Path
 
 from parser import parse_repo
 from summarize import get_file_content, summarize_file
+from llm import stream_chat
 
 app = FastAPI(title="RepoTwin API", version="0.1.0")
 
@@ -86,6 +87,21 @@ async def repo_info(url: str):
             "owner": owner,
             "repo": repo,
         }
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+class ChatRequest(BaseModel):
+    url: str
+    message: str
+
+
+@app.post("/api/chat")
+async def chat(req: ChatRequest):
+    """Streaming chat with DeepSeek or heuristic fallback."""
+    try:
+        response = stream_chat(req.url, req.message)
+        return {"content": response}
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
