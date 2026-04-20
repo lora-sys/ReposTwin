@@ -9,6 +9,7 @@ import shutil
 from pathlib import Path
 
 from parser import parse_repo
+from summarize import get_file_content, summarize_file
 
 app = FastAPI(title="RepoTwin API", version="0.1.0")
 
@@ -40,6 +41,19 @@ async def parse_repository(req: ParseRequest):
     try:
         result = parse_repo(req.url)
         return result
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.get("/api/summarize")
+async def summarize(url: str, file: str):
+    """Read a file from a GitHub repo and return a one-line summary."""
+    try:
+        content = get_file_content(url, file)
+        summary = summarize_file(content, file)
+        return {"file": file, "summary": summary, "lines": content.count("\n")}
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

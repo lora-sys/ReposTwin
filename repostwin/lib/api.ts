@@ -38,3 +38,18 @@ export async function getRepoInfo(url: string) {
   }
   return res.json();
 }
+
+export interface FileSummary {
+  file: string;
+  summary: string;
+  lines: number;
+}
+
+export async function summarizeFile(url: string, file: string): Promise<FileSummary> {
+  const res = await fetch(`${API_BASE}/api/summarize?url=${encodeURIComponent(url)}&file=${encodeURIComponent(file)}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+    throw new Error(err.detail ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+}
