@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { STATIC_GRAPH_DATA } from "@/lib/staticData";
+import { parseRepo, type GraphData } from "@/lib/api";
 
 const ForceGraph3D = dynamic(() => import("@/components/galaxy/ForceGraph3D"), {
   ssr: false,
@@ -112,14 +113,31 @@ export async function ${fileName.replace(`.${fileExt}`, "")}() {
 
 function GalaxyContent() {
   const searchParams = useSearchParams();
-  const repo = searchParams.get("repo") || "demo";
+  const repo = searchParams.get("repo") || "";
+  const [graphData, setGraphData] = useState<GraphData | null>(() => {
+    if (!searchParams.get("repo")) return STATIC_GRAPH_DATA;
+    return null;
+  });
+  const [error, setError] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
 
-  const data = STATIC_GRAPH_DATA;
+  useEffect(() => {
+    const repoUrl = searchParams.get("repo");
+    if (!repoUrl) return; // Lazy init already set STATIC_GRAPH_DATA
+    parseRepo(repoUrl)
+      .then((data) => setGraphData(data))
+      .catch((err) => {
+        console.warn("API unavailable, using static data:", err.message);
+        setGraphData(STATIC_GRAPH_DATA);
+        setError("API 不可用，显示示例数据");
+      });
+  }, [searchParams]);
 
   const handleNodeClick = (node: GraphNode) => {
     setSelectedNode(node);
   };
+
+  const data = graphData ?? STATIC_GRAPH_DATA;
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
@@ -144,7 +162,7 @@ function GalaxyContent() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--secondary)]/30 border border-[var(--secondary)]/50">
             <div className="w-2 h-2 rounded-full bg-[var(--primary)] animate-pulse" />
-            <span className="font-mono text-xs text-[var(--muted)] truncate max-w-[200px]">{repo}</span>
+            <span className="font-mono text-xs text-[var(--muted)] truncate max-w-[200px]">{repo || "demo"}</span>
           </div>
         </div>
 
@@ -153,6 +171,13 @@ function GalaxyContent() {
           <span className="font-mono text-xs">{data.nodes.length} 节点 · {data.links.length} 连线</span>
         </div>
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-[var(--secondary)]/80 border border-[var(--secondary)] text-[var(--muted)] font-mono text-xs backdrop-blur-sm">
+          {error}
+        </div>
+      )}
 
       {/* 3D Canvas */}
       <div className="absolute inset-0 pt-16">
