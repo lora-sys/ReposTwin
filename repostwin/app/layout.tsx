@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Geist } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
-const ibmPlexSans = IBM_Plex_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
@@ -25,9 +22,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className="dark">
+    <html lang="zh-CN" className={cn("dark", "font-sans", geist.variable)}>
       <body
-        className={`${ibmPlexSans.variable} ${jetbrainsMono.variable} min-h-screen antialiased`}
+        className={`${geist.variable} ${jetbrainsMono.variable} min-h-screen antialiased`}
       >
         {children}
       </body>
