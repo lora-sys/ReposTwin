@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { STATIC_GRAPH_DATA } from "@/lib/staticData";
 
-// Dynamic import for 3D component (no SSR)
 const ForceGraph3D = dynamic(() => import("@/components/galaxy/ForceGraph3D"), {
   ssr: false,
   loading: () => (
@@ -50,7 +49,6 @@ function InfoIcon() {
   );
 }
 
-// Detail card for selected node
 function NodeDetailCard({ node, onClose }: { node: GraphNode; onClose: () => void }) {
   const fileName = node.id.split("/").pop() || node.id;
   const fileExt = fileName.split(".").pop() || "";
@@ -87,7 +85,7 @@ function NodeDetailCard({ node, onClose }: { node: GraphNode; onClose: () => voi
           <p className="font-mono text-xs text-[var(--muted)]">行数</p>
         </div>
         <div className="text-center">
-          <p className="font-mono text-lg font-bold text-[var(--accent)]">{(node.size * 3).toFixed(1)}</p>
+          <p className="font-mono text-lg font-bold text-[var(--accent)]">{node.size * 3}</p>
           <p className="font-mono text-xs text-[var(--muted)]">依赖数</p>
         </div>
         <div className="text-center">
@@ -112,32 +110,11 @@ export async function ${fileName.replace(`.${fileExt}`, "")}() {
   );
 }
 
-// Node tooltip on hover
-function Tooltip({ node, position }: { node: GraphNode | null; position: { x: number; y: number } | null }) {
-  if (!node || !position) return null;
-  return (
-    <div
-      className="fixed pointer-events-none z-50 px-3 py-2 rounded-xl bg-[var(--background)]/95 border border-[var(--secondary)] backdrop-blur-sm shadow-xl"
-      style={{
-        left: position.x + 15,
-        top: position.y - 10,
-        animation: "fadeInUp 0.15s ease-out",
-      }}
-    >
-      <p className="font-mono text-xs text-[var(--foreground)] whitespace-nowrap">{node.id}</p>
-      <p className="font-mono text-xs text-[var(--muted)] mt-0.5">
-        {node.size * 15} 行 · group-{node.group}
-      </p>
-    </div>
-  );
-}
-
 function GalaxyContent() {
   const searchParams = useSearchParams();
   const repo = searchParams.get("repo") || "demo";
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
 
-  // Use static data for Phase 0
   const data = STATIC_GRAPH_DATA;
 
   const handleNodeClick = (node: GraphNode) => {
@@ -195,8 +172,6 @@ function GalaxyContent() {
       {selectedNode && (
         <NodeDetailCard node={selectedNode} onClose={() => setSelectedNode(null)} />
       )}
-
-      {/* Tooltip */}
     </div>
   );
 }

@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import ForceGraph3D from "react-force-graph-3d";
 import * as THREE from "three";
@@ -12,6 +13,8 @@ const GROUP_COLORS: Record<number, string> = {
   4: "#F472B6",
   5: "#64748B",
 };
+
+const SPHERE_GEO = new THREE.SphereGeometry(1, 16, 16);
 
 interface GraphNode {
   id: string;
@@ -42,9 +45,22 @@ export default function ForceGraph3DComponent({
   onNodeClick,
   highlightedNode,
 }: ForceGraph3DComponentProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+
+  const matCache = useRef<Map<string, THREE.MeshStandardMaterial>>(new Map());
+
+  const getMaterial = (isHighlighted: boolean, isHovered: boolean, baseColor: string) => {
+    const key = `${isHighlighted}-${isHovered}-${baseColor}`;
+    if (!matCache.current.has(key)) {
+      matCache.current.set(key, new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0.6 }));
+    }
+    const mat = matCache.current.get(key)!;
+    mat.color.set(isHighlighted ? "#EF4444" : isHovered ? "#F8FAFC" : baseColor);
+    mat.emissive.set(isHighlighted ? "#EF4444" : isHovered ? "#666666" : "#000000");
+    mat.emissiveIntensity = isHighlighted ? 0.6 : isHovered ? 0.3 : 0.1;
+    return mat;
+  };
 
   const handleNodeClick = useCallback(
     (node: GraphNode) => {
@@ -64,42 +80,35 @@ export default function ForceGraph3DComponent({
     setHoveredNode(node?.id ?? null);
   }, []);
 
+  useEffect(() => {
+    const cache = matCache.current;
+    return () => {
+      cache.forEach((mat) => mat.dispose());
+      cache.clear();
+      SPHERE_GEO.dispose();
+    };
+  }, []);
+
   return (
-    <Canvas
-      camera={{ position: [30, 30, 30], fov: 60 }}
-      gl={{ antialias: true, alpha: true }}
-      style={{ background: "transparent" }}
-    >
+    <Canvas camera={{ position: [30, 30, 30], fov: 60 }} gl={{ antialias: true, alpha: true }} style={{ background: "transparent" }}>
       <ambientLight intensity={0.4} />
       <pointLight position={[50, 50, 50]} intensity={1} />
       <pointLight position={[-50, -50, -50]} intensity={0.3} color="#38BDF8" />
 
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <ForceGraph3D
         ref={fgRef}
         graphData={data as any}
         nodeId="id"
-        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
         nodeThreeObject={(node: any) => {
           const color = GROUP_COLORS[node.group] ?? "#64748B";
           const radius = Math.max(2, node.size * 0.8);
           const isHovered = hoveredNode === node.id;
           const isHighlighted = highlightedNode === node.id;
-
           const group = new THREE.Group();
-
-          const sphereGeo = new THREE.SphereGeometry(radius, 16, 16);
-          const mat = new THREE.MeshStandardMaterial({
-            color: isHighlighted ? "#EF4444" : isHovered ? "#F8FAFC" : color,
-            emissive: new THREE.Color(isHighlighted ? "#EF4444" : isHovered ? "#666666" : "#000000"),
-            emissiveIntensity: isHighlighted ? 0.6 : isHovered ? 0.3 : 0.1,
-            roughness: 0.3,
-            metalness: 0.6,
-          });
-          const mesh = new THREE.Mesh(sphereGeo, mat);
+          const mesh = new THREE.Mesh(SPHERE_GEO, getMaterial(isHighlighted, isHovered, color));
+          mesh.scale.setScalar(radius);
           mesh.userData = { nodeId: node.id };
           group.add(mesh);
-
           return group;
         }}
         linkDirectionalParticles={2}
